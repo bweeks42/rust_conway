@@ -17,20 +17,27 @@ pub struct ConwayMatrix {
 pub struct ConwayCell {
     current_state: CellState,
     next_state: CellState,
-    neighbors: u8
+    neighbors: u64
 }
 
 impl ConwayCell {
     fn set_next(&mut self, next_cell_state: CellState) {
         self.next_state = next_cell_state;
     }
+        fn tick(&mut self) {
+        self.current_state = self.next_state
+    }
+
+    pub fn is_alive(&self) -> bool {
+        self.current_state == CellState::Alive
+    }
 }
 
 impl ConwayMatrix {
     pub fn new(size: usize) -> Self {
-        let mut matrix = vec![];
+        let mut matrix = Vec::with_capacity(size);
         for _ in 0..size {
-            let mut row: Vec<ConwayCell> = vec![];
+            let mut row: Vec<ConwayCell> = Vec::with_capacity(size);
             for _ in 0..size {
                 row.push(ConwayCell { current_state: CellState::Dead, next_state: CellState::Dead, neighbors: 0 });
             }
@@ -49,7 +56,7 @@ impl ConwayMatrix {
         for y in 0..self.size() {
             for x in 0..self.size()  {
                 let is_alive = self.matrix[y][x].current_state == CellState::Alive;
-                let neighbors = self.num_neighbors_for_cell(x as i8, y as i8);
+                let neighbors = self.num_neighbors_for_cell(x as i64, y as i64);
                 let mut next_cell_state = CellState::Dead;
                 if is_alive && (neighbors == 2 || neighbors == 3) {
                     next_cell_state = CellState::Alive;
@@ -75,6 +82,10 @@ impl ConwayMatrix {
         }
     }
 
+    pub fn cell_at_index(&self, x: usize, y: usize) -> &ConwayCell {
+        &self.matrix[y][x]
+    }
+
     pub fn to_string(&self) -> String {
         let mut s = String::from("");
         for row in &self.matrix {
@@ -97,33 +108,25 @@ impl ConwayMatrix {
         s
     }
 
-    fn num_neighbors_for_cell(&self, x: i8, y: i8) -> u8 {
+    pub fn drop_glider(&mut self) {
+        let x_offset = rand::thread_rng().gen_range(0..(self.size() / 4) * 3);
+        let y_offset = rand::thread_rng().gen_range(0..(self.size() / 4) * 3);
+        self.matrix[3+y_offset][1+x_offset].current_state = CellState::Alive;
+        self.matrix[4+y_offset][2+x_offset].current_state = CellState::Alive;
+        self.matrix[2+y_offset][3+x_offset].current_state = CellState::Alive;
+        self.matrix[3+y_offset][3+x_offset].current_state = CellState::Alive;
+        self.matrix[4+y_offset][3+x_offset].current_state = CellState::Alive;
+    }
+
+    fn num_neighbors_for_cell(&self, x: i64, y: i64) -> u64 {
         let mut neighbors = 0;
         for nx in x-1..x+2 {
             for ny in y-1..y+2 {
-                if (nx > -1 && nx < self.size() as i8) && (ny > -1 && ny < self.size() as i8) && !(nx == x && ny == y) && (self.matrix[ny as usize][nx as usize].current_state == CellState::Alive) {
+                if (nx > -1 && nx < self.size() as i64) && (ny > -1 && ny < self.size() as i64) && !(nx == x && ny == y) && (self.matrix[ny as usize][nx as usize].current_state == CellState::Alive) {
                     neighbors += 1;
                 }
             }
         }
         return neighbors;
     }
-}
-
-impl ConwayCell {
-    fn tick(&mut self) {
-        self.current_state = self.next_state
-    }
-}
-
-
-// Debug
-pub fn put_glider_in_matrix(matrix: &mut ConwayMatrix) {
-    let x_offset = rand::thread_rng().gen_range(0..matrix.size() / 2);
-    let y_offset = rand::thread_rng().gen_range(0..matrix.size() / 2);
-    matrix.matrix[3+y_offset][1+x_offset].current_state = CellState::Alive;
-    matrix.matrix[4+y_offset][2+x_offset].current_state = CellState::Alive;
-    matrix.matrix[2+y_offset][3+x_offset].current_state = CellState::Alive;
-    matrix.matrix[3+y_offset][3+x_offset].current_state = CellState::Alive;
-    matrix.matrix[4+y_offset][3+x_offset].current_state = CellState::Alive;
 }
