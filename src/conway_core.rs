@@ -1,8 +1,3 @@
-use colored::Colorize;
-use rand::Rng;
-
- 
-
 // Core
 #[derive(PartialEq, Clone, Copy)]
 pub enum CellState {
@@ -82,33 +77,21 @@ impl ConwayMatrix {
         }
     }
 
+    pub fn clear(&mut self) {
+        for y in 0..self.size() {
+            for x in 0..self.size() {
+                let cell = &mut self.matrix[y][x];
+                cell.current_state = CellState::Dead;
+            }
+        }
+    }
+
     pub fn cell_at_index(&self, x: usize, y: usize) -> &ConwayCell {
         &self.matrix[y][x]
     }
 
-    pub fn to_string(&self) -> String {
-        let mut s = String::from("");
-        for row in &self.matrix {
-            for cell in row {
-                if cell.current_state == CellState::Alive {
-                    match cell.neighbors {
-                        1 => s.push_str(&"■ ".purple().bold().to_string()),
-                        2 => s.push_str(&"■ ".magenta().bold().to_string()),
-                        3 => s.push_str(&"■ ".green().bold().to_string()),
-                        4 => s.push_str(&"■ ".yellow().bold().to_string()),
-                        5 => s.push_str(&"■ ".red().bold().to_string()),
-                        _ => s.push_str(&"■ ".white().bold().to_string())
-                    }
-                } else {
-                    s.push_str("O ");
-                }
-            }
-            s.push('\n');
-        }
-        s
-    }
-
     pub fn drop_glider(&mut self) {
+        use rand::Rng;
         let x_offset = rand::thread_rng().gen_range(0..(self.size() / 4) * 3);
         let y_offset = rand::thread_rng().gen_range(0..(self.size() / 4) * 3);
         self.matrix[3+y_offset][1+x_offset].current_state = CellState::Alive;
@@ -116,6 +99,11 @@ impl ConwayMatrix {
         self.matrix[2+y_offset][3+x_offset].current_state = CellState::Alive;
         self.matrix[3+y_offset][3+x_offset].current_state = CellState::Alive;
         self.matrix[4+y_offset][3+x_offset].current_state = CellState::Alive;
+    }
+
+    pub fn toggle_cell(&mut self, x: usize, y: usize) {
+        let mut cell = &mut self.matrix[y][x];
+        cell.current_state = if cell.current_state == CellState::Alive {CellState::Dead} else {CellState::Alive};
     }
 
     fn num_neighbors_for_cell(&self, x: i64, y: i64) -> u64 {
